@@ -1,3 +1,173 @@
--e # generated_docs/creating-new-assistant.mdx
+# Detailed Documentation for Assistant Integration with DynamoDB
 
-sample content
+This documentation provides a comprehensive guide on integrating multiple assistants into the orchestrator.
+
+
+---
+
+## Table of Contents
+
+1. [Assistant Architecture](#1-assistant-architecture)
+   - [Key Components](#key-components)
+   - [Data Flow](#data-flow)
+2. [Adding New Assistants](#2-adding-new-assistants)
+   - [Implementing a New Assistant](#implementing-a-new-assistant)
+   - [Registering the Assistant](#registering-the-assistant)
+3. [Modifying the Orchestrator Sequence](#3-modifying-the-orchestrator-sequence)
+   - [Creating a Custom Orchestrator](#creating-a-custom-orchestrator)
+   - [Registering the Orchestrator](#registering-the-orchestrator)
+
+
+## 1. Assistant Architecture
+
+### Key Components
+
+The main components involved are:
+
+1. **Assistants**: Classes inheriting from `BaseAssistant` that handle specific tasks.
+
+   - **File**: `catbackend/assistants/assistant.py`
+
+2. **Orchestrator**: Manages the flow between assistants.
+
+   - **File**: `catbackend/server/chat_answer.py`
+
+3. **AssistantContext**: Holds context information such as user ID, chat ID, and shared data.
+
+   - **File**: `catbackend/context/context.py`
+
+4. **AssistantConfig**: Provides configuration for assistants.
+
+   - **File**: `catbackend/config/assistant_config.py`
+
+5. **TemplateRepository**: Retrieves prompt templates.
+
+   - **File**: `catbackend/template/template.py`
+
+6. **DynamoDB**: Used for storing assistant configurations and templates (to be integrated).
+
+### Data Flow
+
+The data flow involves:
+
+1. User inputs a query.
+2. The orchestrator determines which assistants to invoke.
+3. Each assistant processes the input and produces an output.
+4. Outputs can be chained between assistants.
+5. Assistant configurations and templates are retrieved (from DynamoDB once integrated).
+6. The final response is sent back to the user.
+<img width="800" alt="Screenshot 2024-11-04 at 3 53 37 PM" src="https://github.com/user-attachments/assets/667ae985-d7e2-4dfe-a14b-6594624bbe75">
+
+---
+
+## 2. Adding New Assistants
+
+### Implementing a New Assistant
+
+1. **Create a New Assistant Class**
+
+   - **File**: `catbackend/assistants/my_custom_assistant.py`
+
+   Inherit from `BaseAssistant` and implement the required methods.
+
+   ```python
+   # catbackend/assistants/my_custom_assistant.py
+
+   from catbackend.assistants.assistant import BaseAssistant
+   from catbackend.config.assistant_config import BaseLLMProvider
+
+   class MyCustomAssistant(BaseAssistant):
+       def _initialize(self, llm_provider: BaseLLMProvider):
+           # Initialization logic
+           self.custom_param = self.config.get_value("CUSTOM_PARAM", "default_value")
+
+       def stream(self, query: str):
+           # Processing logic
+           yield "Response from MyCustomAssistant"
+
+2. **Access Templates**
+
+   - **File**: `catbackend/assistants/my_custom_assistant.py`
+
+   Retrieve templates using `self.context.template_repo`.
+
+   ```python
+   # catbackend/assistants/my_custom_assistant.py
+   def _initialize(self, llm_provider: BaseLLMProvider):
+      template = self.context.template_repo.get_template(self.id)
+      self.out.template = template
+      # Use the template content as needed
+
+
+ ### Registering the Assistant
+
+ 1. **Update the Assistant Factory**
+
+    - **File**: `catbackend/assistants/__init__.py`
+   
+    Modify the `create_assistant` function to include the new assistant.
+
+    ```python
+    # catbackend/assistants/__init__.py
+    from .my_custom_assistant import MyCustomAssistant
+
+    def create_assistant(type: str) -> BaseAssistant:
+       if type == "my_custom_assistant":
+           return MyCustomAssistant()
+       # Existing assistants...
+       raise Exception(f"Unknown assistant type: {type}")
+
+
+## 3. Modifying the Orchestrator Sequence
+
+### Creating a Custom Orchestrator
+
+1. **Create a New Orchestrator Class**
+
+   - **File**: `catbackend/assistants/my_custom_orchestrator.py`
+  
+   Inherit from `BaseOrchestrator`.
+
+   ```python
+   # catbackend/assistants/my_custom_orchestrator.py
+   from catbackend.orchestrators.base_orchestrator import BaseOrchestrator
+   from catbackend.orchestrators.orchestrator_context import OrchestratorContext
+
+   class MyCustomOrchestrator(BaseOrchestrator):
+      def orchestrate(self, ctx: OrchestratorContext, query: str):
+          # Orchestration logic
+          pass
+
+2. **Chaining Assistants**
+
+   Define how assistants are invoked and how data is passed between them.
+
+   ```python
+   # catbackend/assistants/my_custom_orchestrator.py
+   def orchestrate(self, ctx: OrchestratorContext, query: str):
+      # Invoke the first assistant
+      result1 = ctx.assistant("assistant_one").run(query)
+      # Pass the output to the next assistant
+      result2 = ctx.assistant("assistant_two").stream(result1)
+      return result2
+
+
+### Registering the Orchestrator
+
+1. **Update the Orchestrator Factory**
+
+   - **File**: `catbackend/assistants/__init__.py`
+
+   Modify the `create_orchestrator` function to include the new orchestrator.
+
+   ```python
+   # catbackend/assistants/__init__.py
+   from .my_custom_orchestrator import MyCustomOrchestrator
+
+   def create_orchestrator(type: str, assistant_id: str) -> BaseOrchestrator:
+       if type == "my_custom_orchestrator":
+           return MyCustomOrchestrator()
+       # Existing orchestrators...
+       return SingleAssistantOrchestrator(assistant_id)
+
+<img width="233" alt="Screenshot 2024-11-04 at 3 53 53 PM" src="https://github.com/user-attachments/assets/7887a8c3-b0d1-48ad-8b05-2e2a3b0b2fdd">
