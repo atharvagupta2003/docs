@@ -1,3 +1,160 @@
--e # generated_docs/integrations/github.mdx
+# GitHub Repository Management Tools Documentation
 
-sample content
+This document provides a detailed overview of the GitHub repository management tools and classes. These tools allow for cloning repositories, answering queries on repository content, creating Cucumber tests, committing changes, and creating pull requests, leveraging Git and GitHub APIs.
+
+---
+
+## Overview
+
+These tools facilitate operations on GitHub repositories, such as cloning, querying, adding Cucumber tests, and managing pull requests. Authentication is handled securely using `AssistantConfig`, ensuring authorized access to private repositories and enabling smooth integration with GitHub services.
+
+---
+
+## Classes and Components
+
+### GetRepositoryTool
+
+- **Purpose**: Clones a GitHub repository and creates a zip file of its contents.
+
+- **Key Features**:
+  - **Repository Cloning**: Clones a GitHub repository to a local directory.
+  - **Content Zipping**: Creates a zip archive of repository contents with relevant file extensions.
+  - **Content Storage**: Saves repository content as a JSON file for easy access.
+
+- **Workflow**:
+  1. **Initialization**: Configures paths for cloning and zipping.
+  2. **Run Method (`_run`)**:
+     - Clones the repository from GitHub. If private, uses a GitHub token for authentication.
+     - Creates a zip file of relevant files (extensions defined in `RELEVANT_EXTENSIONS`).
+     - Stores repository content in `current_repo.json` as JSON data.
+  3. **Return Value**: Returns repository name, zip file path, and success message.
+
+---
+
+### AnswerRepoQuestionTool
+
+- **Purpose**: Provides answers based on the content of a cloned repository.
+
+- **Key Features**:
+  - **Content Querying**: Searches repository content for text matching the user’s query.
+  - **Match Extraction**: Returns excerpts of matching content to provide context for the answer.
+
+- **Workflow**:
+  1. **Initialization**: Loads repository content from `current_repo.json`.
+  2. **Run Method (`_run`)**:
+     - Checks if `current_repo.json` exists.
+     - Searches repository content for the question text.
+     - Returns excerpts of matching content or an error message if no content matches.
+  3. **Return Value**: A dictionary containing the answer and content excerpts.
+
+---
+
+### CreateCucumberTestsTool
+
+- **Purpose**: Creates Cucumber tests and corresponding Python step definitions in a specified repository.
+
+- **Key Features**:
+  - **Test File Creation**: Creates a `.feature` file with Cucumber tests.
+  - **Step Definition Creation**: Saves corresponding Python `steps.py` file with step definitions.
+
+- **Workflow**:
+  1. **Initialization**: Configures paths for saving Cucumber test and step files.
+  2. **Run Method (`_run`)**:
+     - Creates directories (`features` and `steps`) within the repository folder.
+     - Saves the Cucumber tests and Python step definitions to the respective files.
+  3. **Return Value**: Success message indicating tests and steps were saved in the repository.
+
+---
+
+### CommitAndCreatePRTool
+
+- **Purpose**: Commits changes to a new branch and creates a pull request on GitHub.
+
+- **Key Features**:
+  - **Branch and Commit Management**: Creates a new branch, commits changes, and pushes to GitHub.
+  - **Pull Request Creation**: Creates a pull request from the new branch to the base branch.
+
+- **Workflow**:
+  1. **Run Method (`_run`)**:
+     - Calls `commit_changes` to create a new branch, commit changes, and push to GitHub.
+     - Calls `create_pull_request` to open a pull request on GitHub.
+     - Deletes the local repository folder after creating the pull request.
+  2. **Return Value**: Success message with the pull request URL, or an error if the process fails.
+
+---
+
+## Class-Specific Details
+
+### GetRepositoryTool
+
+- **Run Method (`_run`)**:
+  - **Parameters**: `repo_url` (URL of the GitHub repository).
+  - **Returns**: Repository name, zip file path, and success message.
+  - **Workflow**:
+    - Clones the GitHub repository.
+    - Creates a zip archive of relevant files.
+    - Saves repository content in JSON format for querying.
+
+### AnswerRepoQuestionTool
+
+- **Run Method (`_run`)**:
+  - **Parameters**: `question` (text of the query about repository content).
+  - **Returns**: Dictionary with excerpts of matching content or an error message.
+  - **Workflow**:
+    - Loads repository content from JSON file.
+    - Searches for matches based on the question text and returns relevant excerpts.
+
+### CreateCucumberTestsTool
+
+- **Run Method (`_run`)**:
+  - **Parameters**: `cucumber_tests`, `steps`, `repo_folder`, `cucumber_file`.
+  - **Returns**: Success message confirming test and step file creation.
+  - **Workflow**:
+    - Creates necessary directories and files within the repository folder.
+    - Saves Cucumber tests in `.feature` file and step definitions in `steps.py`.
+
+### CommitAndCreatePRTool
+
+- **Run Method (`_run`)**:
+  - **Parameters**: `repo_name`, `branch_name`, `base_branch`, `commit_message`, `pr_title`, `pr_body`.
+  - **Returns**: Success message with pull request URL, or an error if failed.
+  - **Workflow**:
+    - Calls `commit_changes` to push changes to a new branch on GitHub.
+    - Calls `create_pull_request` to open a pull request on GitHub.
+
+---
+
+## Helper Functions
+
+### `commit_changes`
+
+- **Purpose**: Commits changes to a specified branch.
+- **Parameters**: `repo_path`, `branch_name`, `commit_message`.
+- **Workflow**:
+  - Checks out the new branch.
+  - Stages and commits changes with the provided message.
+  - Pushes changes to the remote GitHub repository.
+- **Return Value**: Success message or error details if commit fails.
+
+### `create_pull_request`
+
+- **Purpose**: Creates a pull request on GitHub.
+- **Parameters**: `repo_name`, `branch_name`, `base_branch`, `title`, `body`, `token`.
+- **Workflow**:
+  - Sends a request to GitHub's API to open a pull request.
+- **Return Value**: Pull request URL or error details if creation fails.
+
+---
+
+## Security and Authentication
+
+Each tool in this documentation utilizes secure authentication mechanisms:
+
+- **Credential Management**: Uses `AssistantConfig` to securely retrieve API credentials.
+- **GitHub Token Authentication**: Ensures access to private repositories and secure API requests.
+
+---
+
+## Conclusion
+
+The GitHub repository management tools provide a streamlined and secure way to interact with repositories, allowing for cloning, querying, adding tests, and managing pull requests. This modular setup supports flexibility in repository operations while maintaining security and compliance with GitHub’s best practices. Future enhancements might include expanded query capabilities, additional test automation support, or improved pull request handling.
